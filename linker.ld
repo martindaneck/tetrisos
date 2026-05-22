@@ -8,7 +8,8 @@ SECTIONS
     /* multiboot header + text section */
 	.text BLOCK(4K) : ALIGN(4K)
 	{
-		*(.multiboot)
+		. = ALIGN(8);
+		KEEP(*(.multiboot)) /* align and keep multiboot header as a struct at the beginning of file */
 		*(.text)
 	}
 

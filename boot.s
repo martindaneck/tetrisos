@@ -12,11 +12,17 @@
 .long MAGIC
 .long FLAGS
 .long CHECKSUM
-.skip 20 # offset to video stuff
+# some random stuff
+.long 0 
+.long 0 
+.long 0
+.long 0
+.long 0
+# video
 .long 0 # mode_type - video mode
-.long 320 # width
-.long 200 # height
-.long 8 # depth
+.long 1024 # width
+.long 768 # height
+.long 32 # depth
 
 /* stack */
 .section .bss
@@ -34,7 +40,7 @@ _start:
     mov $stack_top, %esp
 
     /* potentially do extra stuff */
-    
+    pushl %ebx # push the pointer to the multiboot structure
 
     /* call the kernel main function */
     call kernel_main

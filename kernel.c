@@ -114,13 +114,13 @@ struct multiboot_color *board[30][10] = {0};
 // functions definitions
 void draw_tile(struct Tile *tile);
 void move_tile(struct Tile *tile, char direction);
-void write_tile(struct Tile tile);
+void write_tile(struct Tile *tile);
 
 void draw_board();
 
 void draw_tetromino(struct Tetromino *tetromino);
 int move_tetromino(struct Tetromino *tetromino, char direction);
-void write_tetromino(struct Tetromino tetromino);
+void write_tetromino(struct Tetromino *tetromino);
 struct Tetromino generate_tetromino();
 void rotate_tetromino(struct Tetromino *tetromino, char direction);
 bool full_row(int row);
@@ -163,7 +163,7 @@ void kernel_main(unsigned long addr)
             case 'd': 
                 move_tile(&test_tile, 'r'); break;
             case 'e': 
-                write_tile(test_tile); break;
+                write_tile(&test_tile); break;
         }
         /// LOGIC
         
@@ -204,8 +204,8 @@ void move_tile(struct Tile *tile, char direction) {
     }
 }
 
-void write_tile(struct Tile tile) {
-    board[tile.posy][tile.posx] = tile.color;
+void write_tile(struct Tile *tile) {
+    board[tile->posy][tile->posx] = tile->color;
 }
 
 

@@ -4,6 +4,9 @@
 #define KBC_EA 0x60
 
 uint8_t kbdap_last_scancode = 0;
+int kbdap_counter = 0;
+char prev_keypress = 0;
+char keypress = 0;
 
 static inline unsigned char inportb (unsigned short _port) {
     unsigned char rv;
@@ -110,3 +113,28 @@ char kbd_US [128] = {
     0,  /* F12 Key */
     0,  /* All other keys are undefined */
 };
+
+char get_keypress() {
+    char keypress = kbd_US[kbdap_last_scancode];
+    int threshold;
+
+    if (keypress == 's'){
+        threshold = 1000;
+    } else {
+        threshold = 3200;
+    }
+
+    if (prev_keypress != keypress) {
+        prev_keypress = keypress;
+        kbdap_counter = 0;
+        return keypress;
+    } else {
+        kbdap_counter++;
+        if (kbdap_counter > threshold) {
+            prev_keypress = 0;
+            kbdap_counter = 0;
+        }
+    }
+    return 0;
+    
+}

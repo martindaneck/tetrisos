@@ -150,40 +150,21 @@ void kernel_main(unsigned long addr)
     while (true) {
         /// POLL KEYBOARD
         kbdap_loop();
-        char c = kbd_US[kbdap_last_scancode];
+        char c = get_keypress();
 
         /// INPUT
-        int w, a, s, d, threshold = 1000; // arbitrary hacky threshold to detect key press in a sane way
         switch (c) {
             case 'w': 
-                w++;
-                if (w >= threshold) {
-                    move_tile(&test_tile, 'u');
-                    w = 0;
-                } break;
+                move_tile(&test_tile, 'u'); break;
             case 'a': 
-                a++;
-                if (a >= threshold) {
-                    move_tile(&test_tile, 'l');
-                    a = 0;
-                } break;
+                move_tile(&test_tile, 'l'); break;
             case 's': 
-                s++;
-                if (s >= threshold) {
-                    move_tile(&test_tile, 'd');
-                    s = 0;
-                } break;
+                move_tile(&test_tile, 'd'); break;
             case 'd': 
-                d++;
-                if (d >= threshold) {
-                    move_tile(&test_tile, 'r');
-                    d = 0;
-                } break;
-            case 'e':
-                write_tile(test_tile);
-                break;
+                move_tile(&test_tile, 'r'); break;
+            case 'e': 
+                write_tile(test_tile); break;
         }
-
         /// LOGIC
         
 

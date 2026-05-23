@@ -112,7 +112,7 @@ struct Tetromino {
 struct multiboot_color *board[30][10] = {0};
 
 // functions definitions
-void draw_tile(struct Tile *tile, bool remove);
+void draw_tile(struct Tile *tile);
 void move_tile(struct Tile *tile, char direction);
 void write_tile(struct Tile tile);
 
@@ -143,8 +143,8 @@ void kernel_main(unsigned long addr)
     
 
     // test stuff - temporary
-    struct multiboot_color pink = {255, 0, 255};
-    struct Tile test_tile = {0, 0, &pink};
+    struct multiboot_color test_color = {66, 0, 88};
+    struct Tile test_tile = {0, 0, &test_color};
     
     kbdap_init();
     while (true) {
@@ -179,6 +179,9 @@ void kernel_main(unsigned long addr)
                     move_tile(&test_tile, 'r');
                     d = 0;
                 } break;
+            case 'e':
+                write_tile(test_tile);
+                break;
         }
 
         /// LOGIC
@@ -190,30 +193,28 @@ void kernel_main(unsigned long addr)
         //draw_board();
         
         // draw test tile
-        draw_tile(&test_tile, 0);
+        draw_tile(&test_tile);
     }
 }
 
-void draw_tile(struct Tile *tile, bool remove) {
+void draw_tile(struct Tile *tile) {
     static int margin = 1;
     int x = margin + center_x - board_width / 2  + tile->posx * tile_size; 
     int y = margin + center_y - board_height / 2 + tile->posy * tile_size; 
     int width = tile_size - margin * 2;
     int height = tile_size - margin * 2;
 
-    struct multiboot_color *color;
-    if (remove) {
-        color = &color_black;
-    } else {
-        color = tile->color;    
-    }
+    struct multiboot_color *color = tile->color == NULL ? &color_black : tile->color;    
+    
 
     draw_rect(x, y, width, height, color);
 }
 
 void move_tile(struct Tile *tile, char direction) {
-    // draw black over tile first
-    draw_tile(tile, true);
+    // draw background over old tile firt
+    struct Tile temp_tile = {tile->posx, tile->posy, board[tile->posy][tile->posx]};
+    draw_tile(&temp_tile);
+
     switch (direction) {
         case 'u': tile->posy--; break;
         case 'd': tile->posy++; break;
@@ -222,10 +223,16 @@ void move_tile(struct Tile *tile, char direction) {
     }
 }
 
+void write_tile(struct Tile tile) {
+    board[tile.posy][tile.posx] = tile.color;
+}
+
+
+
 void draw_board() {
     for (int i = 0; i < board_height; i++) {
         for (int j = 0; j < board_width; j++) {
-            draw_tile(&(struct Tile) {j, i, board[i][j]}, false);
+            draw_tile(&(struct Tile) {j, i, board[i][j]});
         }
     }
 }

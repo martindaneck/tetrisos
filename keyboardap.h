@@ -20,7 +20,7 @@ static inline void outportb (unsigned short _port, unsigned char _data) {
 
 
 void delay() { // temporary delay function until i do PIT or rdtsc
-    for (int i = 0; i < 100000; i++) {
+    for (int i = 0; i < 100000; i++) { // arbitrary
         asm volatile ("nop");
     }
 }
@@ -119,22 +119,33 @@ char get_keypress() {
     int threshold;
 
     if (keypress == 's'){
-        threshold = 1000;
+        threshold = 1000; // arbitrary numbers, adjust w timer later
     } else {
         threshold = 3200;
     }
 
-    if (prev_keypress != keypress) {
+    if (prev_keypress != keypress) { // change of keypress - emit keypress
         prev_keypress = keypress;
         kbdap_counter = 0;
         return keypress;
-    } else {
-        kbdap_counter++;
-        if (kbdap_counter > threshold) {
-            prev_keypress = 0;
-            kbdap_counter = 0;
-        }
-    }
-    return 0;
+    }  
     
+    // else counter++
+    kbdap_counter++;
+    if (kbdap_counter > threshold * 10) { // reset counter to avoid overflow
+        kbdap_counter = threshold;
+    }
+
+
+    if ((kbdap_counter % threshold == 0) && keypress == 's') { // s is special, holding down should accelerate, return early
+        kbdap_counter = 0;
+        return keypress;
+    } 
+
+    // holding -> 3 emits slowly, after that quickly
+    else if ( ((kbdap_counter % threshold) == 0) || (kbdap_counter >= (threshold * 3) && (kbdap_counter % (threshold / 2)) == 0) ) {
+        return keypress;
+    }
+    
+    return 0;  
 }

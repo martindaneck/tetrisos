@@ -4,20 +4,12 @@
 #define KBC_EA 0x60
 
 uint8_t kbdap_last_scancode = 0;
-int kbdap_counter = 0;
 char prev_keypress = 0;
 char keypress = 0;
 
 static inline unsigned char inb (unsigned short _port);
 
 static inline void outb (unsigned short _port, unsigned char _data);
-
-
-void delay() { // temporary delay function until i do PIT or rdtsc
-    for (int i = 0; i < 100000; i++) { // arbitrary
-        asm volatile ("nop");
-    }
-}
 
 void kbdap_send_command(uint8_t command) {
     while (inb(KBC_STATUS) & 0x02); // wait for the buffer to be ready
@@ -71,7 +63,6 @@ void kbdap_loop() {
     if (scancode != 0) {
         kbdap_last_scancode = scancode;
     }
-    delay();
 }
 
 char kbd_US [128] = {
@@ -109,35 +100,28 @@ char kbd_US [128] = {
 };
 
 char get_keypress() {
-    char keypress = kbd_US[kbdap_last_scancode];
-    int threshold;
+    int G = 48; // level 0 speed. This variable will be a parameter of this function in the future
 
-    if (keypress == 's'){
-        threshold = 100; // arbitrary numbers, adjust w timer later
-    } else {
-        threshold = 320;
-    }
+    char keypress = kbd_US[kbdap_last_scancode];
+    static int frames_held = 0;
 
     if (prev_keypress != keypress) { // change of keypress - emit keypress
         prev_keypress = keypress;
-        kbdap_counter = 0;
+        frames_held = 0;
         return keypress;
     }  
     
     // else counter++
-    kbdap_counter++;
-    if (kbdap_counter > threshold * 10) { // reset counter to avoid overflow
-        kbdap_counter = threshold;
+    frames_held++;  
+
+    if ((frames_held % (G / 2) == 0) && keypress == 's') { // Soft drop - half of G speed
+        return keypress;
+    } else if (keypress == 's') { 
+        return 0;
     }
 
-
-    if ((kbdap_counter % threshold == 0) && keypress == 's') { // s is special, holding down should accelerate, return early
-        kbdap_counter = 0;
-        return keypress;
-    } 
-
-    // holding -> 3 emits slowly, after that quickly
-    else if ( ((kbdap_counter % threshold) == 0) || (kbdap_counter >= (threshold * 3) && (kbdap_counter % (threshold / 2)) == 0) ) {
+    // DAS 
+    else if ( ((frames_held % 16) == 0) || (frames_held >= 16 && ((frames_held - 16) % 6 == 0)) ) { // DAS 
         return keypress;
     }
     

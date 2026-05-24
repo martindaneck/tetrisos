@@ -79,7 +79,10 @@ void draw_rect_fb(uint32_t x, uint32_t y, uint32_t width, uint32_t height, struc
 #define draw_rect(x, y, width, height, color) draw_rect_fb(x, y, width, height, color, fb_address, fb_pitch)
 
 // Global variables
+char c = 0; // input character
+
 uint64_t time;
+uint64_t last_time;
 // fb variables
 uint32_t fb_width;
 uint32_t fb_height;
@@ -95,7 +98,7 @@ int tile_size = 38; // height / 20
 int padding = 4; // (height % 20) / 2
 int board_width = 380; // tile_size * 10
 int board_height = 760; // tile_size * 20
-int SPEED = 1000; // completely arbitrary value
+
 
 /// TETRIS GAME SPECIFIC STUFF
 // colors 1-7 + 3 grays
@@ -163,22 +166,28 @@ void kernel_main(unsigned long addr)
     struct multiboot_color test_color = {66, 0, 88};
     struct Tile test_tile = {0, 0, &test_color};
 
-    int seconds = 0;
+    
     
     kbdap_init();
     while (true) {
         /// POLLING
-        // read keyboard
-        kbdap_loop();
-        char c = get_keypress();
         // timer
         time += read_timer();
+        // read keyboard
+        kbdap_loop();
+        if (last_time != time) {
+            c = get_keypress();
+        } else {
+            c = 0;
+        }
+        // update last time
+        last_time = time;
 
 
         /// INPUT
         switch (c) {
             case 'w': 
-                move_tile(&test_tile, 'u'); break;
+                move_tile(&test_tile, 'u'); break; // temporary test direction
             case 'a': 
                 move_tile(&test_tile, 'l'); break;
             case 's': 
@@ -186,25 +195,17 @@ void kernel_main(unsigned long addr)
             case 'd': 
                 move_tile(&test_tile, 'r'); break;
             case 'e': 
-                write_tile(&test_tile); break;
+                write_tile(&test_tile); break; // temporary test write
         }
         /// LOGIC
         
 
         /// RENDER
-
-        // draw the board
-        if (time > 60) {
-            seconds++;
-            time -= 60;
-            write_tile(&(struct Tile) {seconds, 2, &color_red});
-        }
-        
         
         // draw test tile
         draw_tile(&test_tile);    
         
-
+        // draw the board
         draw_board(&test_tile);
     }
 }

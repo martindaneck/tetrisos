@@ -78,6 +78,19 @@ void draw_rect_fb(uint32_t x, uint32_t y, uint32_t width, uint32_t height, struc
 }
 #define draw_rect(x, y, width, height, color) draw_rect_fb(x, y, width, height, color, fb_address, fb_pitch)
 
+
+// macro definitions
+#define WIDTH 1024
+#define HEIGHT 768 // inferred from boot.s, dirty magic numbers for simplicity
+#define CENTER_X (WIDTH / 2)
+#define CENTER_Y (HEIGHT / 2)
+#define TILE_SIZE ((HEIGHT) / 20) 
+#define PADDING (((HEIGHT) % 20) / 2)
+#define MARGIN 1
+#define BOARD_WIDTH (TILE_SIZE * 10) 
+#define BOARD_HEIGHT (TILE_SIZE * 20) 
+
+
 // Global variables
 char c = 0; // input character
 
@@ -88,17 +101,6 @@ uint32_t fb_width;
 uint32_t fb_height;
 uint32_t fb_pitch;
 uint64_t fb_address;
-
-// tetris variables
-int width = 1024, height = 768; // inferred from boot.s, dirty magic numbers for simplicity
-// definitions, magic numbers for simplicity
-int center_x = 512; // width / 2
-int center_y = 384; // height / 2
-int tile_size = 38; // height / 20
-int padding = 4; // (height % 20) / 2
-int board_width = 380; // tile_size * 10
-int board_height = 760; // tile_size * 20
-
 
 /// TETRIS GAME SPECIFIC STUFF
 // colors 1-7 + 3 grays
@@ -211,16 +213,15 @@ void kernel_main(unsigned long addr)
 }
 
 void draw_tile(struct Tile *tile) {
-    static int margin = 1;
-    int x = margin + center_x - board_width / 2  + tile->posx * tile_size; 
-    int y = margin + center_y - board_height / 2 + tile->posy * tile_size; 
-    int width = tile_size - margin * 2;
-    int height = tile_size - margin * 2;
+    int x = MARGIN + CENTER_X - BOARD_WIDTH / 2  + tile->posx * TILE_SIZE; 
+    int y = MARGIN + CENTER_Y - BOARD_HEIGHT / 2 + tile->posy * TILE_SIZE; 
+    int tile_width = TILE_SIZE - MARGIN * 2;
+    int tile_height = TILE_SIZE - MARGIN * 2;
 
     struct multiboot_color *color = tile->color == NULL ? &color_black : tile->color;    
     
 
-    draw_rect(x, y, width, height, color);
+    draw_rect(x, y, tile_width, tile_height, color);
 }
 
 void move_tile(struct Tile *tile, char direction) {

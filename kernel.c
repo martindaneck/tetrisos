@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include "keyboardap.h"
+#include "timer.h"
 
 typedef struct {
     uint32_t flags;
@@ -51,6 +52,17 @@ struct multiboot_color
     uint8_t blue;
 };
 
+static inline unsigned char inb (unsigned short _port) {
+    unsigned char rv;
+    asm volatile ("in %1, %0" : "=a" (rv) : "dN" (_port));
+    return rv;
+}
+
+static inline void outb (unsigned short _port, unsigned char _data) {
+    asm volatile ("out %0, %1" : : "a" (_data), "dN" (_port));
+}
+
+
 void draw_pixel_fb(uint32_t x, uint32_t y, struct multiboot_color *color, uint64_t fb_address, uint32_t pitch) {
     *(uint32_t *)(fb_address + y * pitch + x * 4) = color->red << 16 | color->green << 8 | color->blue;
 }
@@ -67,6 +79,7 @@ void draw_rect_fb(uint32_t x, uint32_t y, uint32_t width, uint32_t height, struc
 #define draw_rect(x, y, width, height, color) draw_rect_fb(x, y, width, height, color, fb_address, fb_pitch)
 
 // Global variables
+uint64_t time;
 // fb variables
 uint32_t fb_width;
 uint32_t fb_height;
@@ -98,6 +111,7 @@ struct multiboot_color color_gray = {128, 128, 128 }; // medium gray
 struct multiboot_color color_dark_gray = {32, 32, 32 }; // dark gray
 struct multiboot_color color_black = {0, 0, 0 }; // black
 struct multiboot_color color_white = {255, 255, 255 }; // white
+struct multiboot_color color_red = {255, 0, 0 }; // red
 
 struct Tile {
     int posx;
@@ -138,6 +152,9 @@ void kernel_main(unsigned long addr)
     fb_pitch = mbi->framebuffer_pitch;
     fb_address = mbi->framebuffer_addr;
 
+    // init timer
+    set_timer();
+
     /// TETRIS GAME
     
     
@@ -146,13 +163,17 @@ void kernel_main(unsigned long addr)
     struct multiboot_color test_color = {66, 0, 88};
     struct Tile test_tile = {0, 0, &test_color};
 
-    bool lastyellow = false;
+    int seconds = 0;
     
     kbdap_init();
     while (true) {
-        /// POLL KEYBOARD
+        /// POLLING
+        // read keyboard
         kbdap_loop();
         char c = get_keypress();
+        // timer
+        time += read_timer();
+
 
         /// INPUT
         switch (c) {
@@ -173,10 +194,16 @@ void kernel_main(unsigned long addr)
         /// RENDER
 
         // draw the board
+        if (time > 60) {
+            seconds++;
+            time -= 60;
+            write_tile(&(struct Tile) {seconds, 2, &color_red});
+        }
         
         
         // draw test tile
-        draw_tile(&test_tile);
+        draw_tile(&test_tile);    
+        
 
         draw_board(&test_tile);
     }

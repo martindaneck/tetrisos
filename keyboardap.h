@@ -8,15 +8,9 @@ int kbdap_counter = 0;
 char prev_keypress = 0;
 char keypress = 0;
 
-static inline unsigned char inportb (unsigned short _port) {
-    unsigned char rv;
-    asm volatile ("in %1, %0" : "=a" (rv) : "dN" (_port));
-    return rv;
-}
+static inline unsigned char inb (unsigned short _port);
 
-static inline void outportb (unsigned short _port, unsigned char _data) {
-    asm volatile ("out %0, %1" : : "a" (_data), "dN" (_port));
-}
+static inline void outb (unsigned short _port, unsigned char _data);
 
 
 void delay() { // temporary delay function until i do PIT or rdtsc
@@ -26,8 +20,8 @@ void delay() { // temporary delay function until i do PIT or rdtsc
 }
 
 void kbdap_send_command(uint8_t command) {
-    while (inportb(KBC_STATUS) & 0x02); // wait for the buffer to be ready
-    outportb(KBC_EA, command);
+    while (inb(KBC_STATUS) & 0x02); // wait for the buffer to be ready
+    outb(KBC_EA, command);
 }
 
 uint32_t kbdap_get_scancode() {
@@ -35,8 +29,8 @@ uint32_t kbdap_get_scancode() {
     static unsigned e1_code = 0;
     static unsigned e1_prev = 0;
     uint8_t scancode = 0;
-    if (inportb(KBC_STATUS) & 1) { // a scancode is available in the buffer
-        scancode = inportb(KBC_EA);
+    if (inb(KBC_STATUS) & 1) { // a scancode is available in the buffer
+        scancode = inb(KBC_EA);
         if (e0_code == 1) { // scancode is an e0 code
             e0_code = 0;
             return (0xe000 | scancode);
@@ -60,13 +54,13 @@ uint32_t kbdap_get_scancode() {
 
 void kbdap_init() {
     // empty keyboard buffer
-    while (inportb(KBC_STATUS) & 0x01) {
-        inportb(KBC_EA);
+    while (inb(KBC_STATUS) & 0x01) {
+        inb(KBC_EA);
     }
     // activate keyboard
     kbdap_send_command(0xF4);
-    while (inportb(KBC_STATUS) & 0x01) {
-        inportb(KBC_EA);
+    while (inb(KBC_STATUS) & 0x01) {
+        inb(KBC_EA);
     }
     // self test
     kbdap_send_command(0xEE);

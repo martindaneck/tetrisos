@@ -116,7 +116,7 @@ void draw_tile(struct Tile *tile);
 void move_tile(struct Tile *tile, char direction);
 void write_tile(struct Tile *tile);
 
-void draw_board();
+void draw_board(struct Tile *active_tile);
 
 void draw_tetromino(struct Tetromino *tetromino);
 int move_tetromino(struct Tetromino *tetromino, char direction);
@@ -145,6 +145,8 @@ void kernel_main(unsigned long addr)
     // test stuff - temporary
     struct multiboot_color test_color = {66, 0, 88};
     struct Tile test_tile = {0, 0, &test_color};
+
+    bool lastyellow = false;
     
     kbdap_init();
     while (true) {
@@ -171,10 +173,12 @@ void kernel_main(unsigned long addr)
         /// RENDER
 
         // draw the board
-        //draw_board();
+        
         
         // draw test tile
         draw_tile(&test_tile);
+
+        draw_board(&test_tile);
     }
 }
 
@@ -210,10 +214,16 @@ void write_tile(struct Tile *tile) {
 
 
 
-void draw_board() {
-    for (int i = 0; i < board_height; i++) {
-        for (int j = 0; j < board_width; j++) {
-            draw_tile(&(struct Tile) {j, i, board[i][j]});
+void draw_board(struct Tile *active_tile) { // don't draw board over the active tetromino
+    for (int i = 0; i < 20; i++) {
+        for (int j = 0; j < 10; j++) {
+            if (i == active_tile->posy && j == active_tile->posx) {
+                continue;
+            }
+
+            struct multiboot_color *color = board[i][j] == NULL ? &color_dark_gray : board[i][j];
+
+            draw_tile(&(struct Tile) {j, i, color});
         }
     }
 }

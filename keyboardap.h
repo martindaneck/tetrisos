@@ -119,9 +119,9 @@ char get_keypress() {
     int threshold;
 
     if (keypress == 's'){
-        threshold = 1000; // arbitrary numbers, adjust w timer later
+        threshold = 100; // arbitrary numbers, adjust w timer later
     } else {
-        threshold = 3200;
+        threshold = 320;
     }
 
     if (prev_keypress != keypress) { // change of keypress - emit keypress

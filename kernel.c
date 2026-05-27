@@ -125,6 +125,7 @@ struct Tile {
 };
 
 struct Tetromino {
+    char shape;
     struct Tile tiles[4];
 };
 
@@ -135,7 +136,7 @@ void draw_tile(struct Tile *tile);
 void move_tile(struct Tile *tile, char direction);
 void write_tile(struct Tile *tile);
 
-void draw_board(struct Tile *active_tile);
+void draw_board(struct Tetromino *active_tetromino); 
 
 void draw_tetromino(struct Tetromino *tetromino);
 int move_tetromino(struct Tetromino *tetromino, char direction);
@@ -167,7 +168,7 @@ void kernel_main(unsigned long addr)
     // test stuff - temporary
     struct multiboot_color test_color = {66, 0, 88};
     struct Tile test_tile = {0, 0, &test_color};
-
+    struct Tetromino test_tetromino = generate_tetromino();
     
     
     kbdap_init();
@@ -189,26 +190,27 @@ void kernel_main(unsigned long addr)
         /// INPUT
         switch (c) {
             case 'w': 
-                move_tile(&test_tile, 'u'); break; // temporary test direction
+                move_tetromino(&test_tetromino, 'u'); break; // temporary test direction
             case 'a': 
-                move_tile(&test_tile, 'l'); break;
+                move_tetromino(&test_tetromino, 'l'); break;
             case 's': 
-                move_tile(&test_tile, 'd'); break;
+                move_tetromino(&test_tetromino, 'd'); break;
             case 'd': 
-                move_tile(&test_tile, 'r'); break;
-            case 'e': 
-                write_tile(&test_tile); break; // temporary test write
+                move_tetromino(&test_tetromino, 'r'); break;
+            case 'f': 
+                write_tetromino(&test_tetromino); break; // temporary test write
         }
         /// LOGIC
         
 
         /// RENDER
         
-        // draw test tile
-        draw_tile(&test_tile);    
+        // draw tests
+        //draw_tile(&test_tile); 
+        draw_tetromino(&test_tetromino);   
         
         // draw the board
-        draw_board(&test_tile);
+        draw_board(&test_tetromino);
     }
 }
 
@@ -243,10 +245,18 @@ void write_tile(struct Tile *tile) {
 
 
 
-void draw_board(struct Tile *active_tile) { // don't draw board over the active tetromino
-    for (int i = 0; i < 20; i++) {
-        for (int j = 0; j < 10; j++) {
-            if (i == active_tile->posy && j == active_tile->posx) {
+void draw_board(struct Tetromino *active_tetromino) { // don't draw board over the active tetromino
+    bool flag = false;
+    for (int i = 0; i < 20; i++) { // rows
+        for (int j = 0; j < 10; j++) { // columns
+            for (int k = 0; k < 4; k++) { // tiles
+                if (i == active_tetromino->tiles[k].posy && j == active_tetromino->tiles[k].posx) {
+                    flag = true;
+                    break;
+                }
+            }
+            if (flag) {
+                flag = false;
                 continue;
             }
 
@@ -254,5 +264,82 @@ void draw_board(struct Tile *active_tile) { // don't draw board over the active 
 
             draw_tile(&(struct Tile) {j, i, color});
         }
+    }
+}
+
+struct Tetromino generate_tetromino(){
+    struct Tetromino tetromino;
+    int r = 0; // temp, implement random tetromino
+    struct Tile start_tile = {5, 5, NULL}; // This is the initial position of the tetromino
+    switch (r) {
+        case 0: // T
+            start_tile.color = &color_a;
+            tetromino.tiles[0] = start_tile;
+            tetromino.tiles[1] = (struct Tile){start_tile.posx-1, start_tile.posy, &color_a};
+            tetromino.tiles[2] = (struct Tile){start_tile.posx+1, start_tile.posy, &color_a};
+            tetromino.tiles[3] = (struct Tile){start_tile.posx, start_tile.posy+1, &color_a};
+            break;
+        case 1: // J
+            start_tile.color = &color_b;
+            tetromino.tiles[0] = start_tile;
+            tetromino.tiles[1] = (struct Tile){start_tile.posx, start_tile.posy-1,   &color_b};
+            tetromino.tiles[2] = (struct Tile){start_tile.posx-1, start_tile.posy-1, &color_b};
+            tetromino.tiles[3] = (struct Tile){start_tile.posx, start_tile.posy+1,   &color_b};
+            break;
+        case 2: // L
+            start_tile.color = &color_c;
+            tetromino.tiles[0] = start_tile;
+            tetromino.tiles[1] = (struct Tile){start_tile.posx, start_tile.posy-1, &color_c};
+            tetromino.tiles[2] = (struct Tile){start_tile.posx+1, start_tile.posy-1, &color_c};
+            tetromino.tiles[3] = (struct Tile){start_tile.posx, start_tile.posy+1, &color_c};
+            break;
+        case 3: // I
+            start_tile.color = &color_d;
+            tetromino.tiles[0] = start_tile;
+            tetromino.tiles[1] = (struct Tile){start_tile.posx-1, start_tile.posy, &color_d};
+            tetromino.tiles[2] = (struct Tile){start_tile.posx+1, start_tile.posy, &color_d};
+            tetromino.tiles[3] = (struct Tile){start_tile.posx-2, start_tile.posy, &color_d};
+            break;
+        case 4: // O
+            start_tile.color = &color_e;
+            tetromino.tiles[0] = start_tile;
+            tetromino.tiles[1] = (struct Tile){start_tile.posx-1, start_tile.posy, &color_e};
+            tetromino.tiles[2] = (struct Tile){start_tile.posx, start_tile.posy+1, &color_e};
+            tetromino.tiles[3] = (struct Tile){start_tile.posx-1, start_tile.posy+1, &color_e};
+            break;
+        case 5: // Z
+            start_tile.color = &color_f;
+            tetromino.tiles[0] = start_tile;
+            tetromino.tiles[1] = (struct Tile){start_tile.posx+1, start_tile.posy, &color_f};
+            tetromino.tiles[2] = (struct Tile){start_tile.posx, start_tile.posy+1, &color_f};
+            tetromino.tiles[3] = (struct Tile){start_tile.posx-1, start_tile.posy+1, &color_f};
+            break;
+        case 6: // S
+            start_tile.color = &color_g;
+            tetromino.tiles[0] = start_tile;
+            tetromino.tiles[1] = (struct Tile){start_tile.posx+1, start_tile.posy, &color_g};
+            tetromino.tiles[2] = (struct Tile){start_tile.posx, start_tile.posy-1, &color_g};
+            tetromino.tiles[3] = (struct Tile){start_tile.posx-1, start_tile.posy-1, &color_g};
+            break;
+    }
+    return tetromino;
+}
+
+void draw_tetromino(struct Tetromino *tetromino) {
+    for (int i = 0; i < 4; i++) {
+        draw_tile(&(tetromino->tiles[i]));
+    }
+}
+
+int move_tetromino(struct Tetromino *tetromino, char direction) {
+    for (int i = 0; i < 4; i++) {
+        move_tile(&(tetromino->tiles[i]), direction);
+    }
+    return 0;
+}
+
+void write_tetromino(struct Tetromino *tetromino) {
+    for (int i = 0; i < 4; i++) {
+        write_tile(&(tetromino->tiles[i]));
     }
 }

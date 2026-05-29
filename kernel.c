@@ -216,7 +216,7 @@ void kernel_main(unsigned long addr)
 
 void draw_tile(struct Tile *tile) {
     int x = MARGIN + CENTER_X - BOARD_WIDTH / 2  + tile->posx * TILE_SIZE; 
-    int y = MARGIN + CENTER_Y - BOARD_HEIGHT / 2 + tile->posy * TILE_SIZE; 
+    int y = MARGIN + CENTER_Y - BOARD_HEIGHT / 2 + (19 - tile->posy) * TILE_SIZE; 
     int tile_width = TILE_SIZE - MARGIN * 2;
     int tile_height = TILE_SIZE - MARGIN * 2;
 
@@ -227,13 +227,13 @@ void draw_tile(struct Tile *tile) {
 }
 
 void move_tile(struct Tile *tile, char direction) {
-    // draw background over old tile firt
+    // draw background over old tile first
     struct Tile temp_tile = {tile->posx, tile->posy, board[tile->posy][tile->posx]};
     draw_tile(&temp_tile);
 
     switch (direction) {
-        case 'u': tile->posy--; break;
-        case 'd': tile->posy++; break;
+        case 'u': tile->posy++; break;
+        case 'd': tile->posy--; break;
         case 'l': tile->posx--; break;
         case 'r': tile->posx++; break;
     }
@@ -277,7 +277,7 @@ struct Tetromino generate_tetromino(){
             tetromino.tiles[0] = start_tile;
             tetromino.tiles[1] = (struct Tile){start_tile.posx-1, start_tile.posy, &color_a};
             tetromino.tiles[2] = (struct Tile){start_tile.posx+1, start_tile.posy, &color_a};
-            tetromino.tiles[3] = (struct Tile){start_tile.posx, start_tile.posy+1, &color_a};
+            tetromino.tiles[3] = (struct Tile){start_tile.posx, start_tile.posy-1, &color_a};
             break;
         case 1: // J
             start_tile.color = &color_b;

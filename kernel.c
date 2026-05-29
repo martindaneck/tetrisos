@@ -237,6 +237,8 @@ void move_tile(struct Tile *tile, char direction) {
         case 'l': tile->posx--; break;
         case 'r': tile->posx++; break;
     }
+
+    
 }
 
 void write_tile(struct Tile *tile) {
@@ -333,8 +335,26 @@ void draw_tetromino(struct Tetromino *tetromino) {
 
 int move_tetromino(struct Tetromino *tetromino, char direction) {
     for (int i = 0; i < 4; i++) {
+        struct Tile *tile = &(tetromino->tiles[i]);
+        struct Tile new_tile = {tile->posx, tile->posy, tile->color};
+
+        move_tile(&new_tile, direction);
+
+        // bounds checking
+        if (new_tile.posx < 0 || new_tile.posx > 9 || new_tile.posy < 0 || new_tile.posy > 19) {
+            return 1;
+        }
+
+        // other pieces checking
+        if (board[new_tile.posy][new_tile.posx] != NULL) {
+            return 1;
+        }
+    }
+
+    for (int i = 0; i < 4; i++) {
         move_tile(&(tetromino->tiles[i]), direction);
     }
+
     return 0;
 }
 

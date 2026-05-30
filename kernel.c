@@ -125,7 +125,6 @@ struct Tile {
 };
 
 struct Tetromino {
-    char shape;
     struct Tile tiles[4];
 };
 
@@ -197,6 +196,10 @@ void kernel_main(unsigned long addr)
                 move_tetromino(&test_tetromino, 'd'); break;
             case 'd': 
                 move_tetromino(&test_tetromino, 'r'); break;
+            case 'q':
+                rotate_tetromino(&test_tetromino, 'a'); break;
+            case 'e':
+                rotate_tetromino(&test_tetromino, 'c'); break;
             case 'f': 
                 write_tetromino(&test_tetromino); break; // temporary test write
         }
@@ -271,8 +274,10 @@ void draw_board(struct Tetromino *active_tetromino) { // don't draw board over t
 
 struct Tetromino generate_tetromino(){
     struct Tetromino tetromino;
-    int r = 0; // temp, implement random tetromino
-    struct Tile start_tile = {5, 5, NULL}; // This is the initial position of the tetromino
+    struct Tile start_tile = {5, 15, NULL}; // This is the initial position of the tetromino
+
+    int r = 3; // temp, implement random tetromino
+    
     switch (r) {
         case 0: // T
             start_tile.color = &color_a;
@@ -342,12 +347,12 @@ int move_tetromino(struct Tetromino *tetromino, char direction) {
 
         // bounds checking
         if (new_tile.posx < 0 || new_tile.posx > 9 || new_tile.posy < 0 || new_tile.posy > 19) {
-            return 1;
+            return direction != 'd';
         }
 
         // other pieces checking
         if (board[new_tile.posy][new_tile.posx] != NULL) {
-            return 1;
+            return direction != 'd';
         }
     }
 
@@ -362,4 +367,49 @@ void write_tetromino(struct Tetromino *tetromino) {
     for (int i = 0; i < 4; i++) {
         write_tile(&(tetromino->tiles[i]));
     }
+}
+
+
+void rotate_tetromino(struct Tetromino *tetromino, char direction) {
+    int newx[4];    // new positions
+    int newy[4];
+
+    // tile to pivot on
+    int px = tetromino->tiles[0].posx;
+    int py = tetromino->tiles[0].posy;
+
+    for (int i = 0; i < 4; i++) {
+        struct Tile *tile = &(tetromino->tiles[i]);
+
+        // relative position
+        int relx = tile->posx - px;
+        int rely = tile->posy - py;
+
+        // new position 
+        if (direction == 'c') { // clockwise
+            newx[i] = px + rely;
+            newy[i] = py - relx;
+        } else { // counter clockwise
+            newx[i] = px - rely;
+            newy[i] = py + relx;
+        }
+
+        // bounds checking
+        if (newx[i] < 0 || newx[i] > 9 || newy[i] < 0 || newy[i] > 19) {
+            return;
+        }
+
+        // other pieces checking
+        if (board[newy[i]][newx[i]] != NULL) {
+            return;
+        }
+    }
+
+    // apply rotation
+    for (int i = 1; i < 4; i++) { // first tile doesn't move
+        tetromino->tiles[i].posx = newx[i];
+        tetromino->tiles[i].posy = newy[i];
+    }
+
+    return;
 }

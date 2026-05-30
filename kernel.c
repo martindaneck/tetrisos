@@ -138,7 +138,7 @@ void write_tile(struct Tile *tile);
 void draw_board(struct Tetromino *active_tetromino); 
 
 void draw_tetromino(struct Tetromino *tetromino);
-int move_tetromino(struct Tetromino *tetromino, char direction);
+bool move_tetromino(struct Tetromino *tetromino, char direction);
 void write_tetromino(struct Tetromino *tetromino);
 struct Tetromino generate_tetromino();
 void rotate_tetromino(struct Tetromino *tetromino, char direction);
@@ -161,26 +161,22 @@ void kernel_main(unsigned long addr)
     set_timer();
 
     /// TETRIS GAME
-    
-    
-
-    // test stuff - temporary
-    struct multiboot_color test_color = {66, 0, 88};
-    struct Tile test_tile = {0, 0, &test_color};
-    struct Tetromino test_tetromino = generate_tetromino();
+    struct Tetromino active_tetromino = generate_tetromino();
+    bool tetromino_down = false;
+    int G = 48; //gravity, adjusted with levels
     
     
     kbdap_init();
     while (true) {
         /// POLLING
         // timer
-        time += read_timer();
+        time += read_timer(); // incremented at 60 Hz
         // read keyboard
         kbdap_loop();
         if (last_time != time) {
             c = get_keypress();
         } else {
-            c = 0;
+            continue; // ensures game logic runs at 60 Hz
         }
         // update last time
         last_time = time;
@@ -189,35 +185,48 @@ void kernel_main(unsigned long addr)
         /// INPUT
         switch (c) {
             case 'w': 
-                move_tetromino(&test_tetromino, 'u'); break; // temporary test direction
+                move_tetromino(&active_tetromino, 'u'); break; // temporary test direction
             case 'a': 
-                move_tetromino(&test_tetromino, 'l'); break;
+                move_tetromino(&active_tetromino, 'l'); break;
             case 's': 
-                move_tetromino(&test_tetromino, 'd'); break;
+                tetromino_down = move_tetromino(&active_tetromino, 'd'); break;
             case 'd': 
-                move_tetromino(&test_tetromino, 'r'); break;
+                move_tetromino(&active_tetromino, 'r'); break;
             case 'q':
-                rotate_tetromino(&test_tetromino, 'a'); break;
+                rotate_tetromino(&active_tetromino, 'a'); break;
             case 'e':
-                rotate_tetromino(&test_tetromino, 'c'); break;
+                rotate_tetromino(&active_tetromino, 'c'); break;
             case 'f': 
-                write_tetromino(&test_tetromino); break; // temporary test write
+                write_tetromino(&active_tetromino); break; // temporary test write
         }
         /// LOGIC
-        
+        // fall
+        if (time % G == 0) {
+            tetromino_down |= move_tetromino(&active_tetromino, 'd');
+        }
+
+        if (tetromino_down) {
+            write_tetromino(&active_tetromino);
+            active_tetromino = generate_tetromino();
+        }
+
+        tetromino_down = false;
 
         /// RENDER
-        
-        // draw tests
         //draw_tile(&test_tile); 
-        draw_tetromino(&test_tetromino);   
+        draw_tetromino(&active_tetromino);   
         
         // draw the board
-        draw_board(&test_tetromino);
+        draw_board(&active_tetromino);
     }
 }
 
 void draw_tile(struct Tile *tile) {
+    if (tile->posy > 19) { // dont draw outside board
+        return;
+    }
+
+
     int x = MARGIN + CENTER_X - BOARD_WIDTH / 2  + tile->posx * TILE_SIZE; 
     int y = MARGIN + CENTER_Y - BOARD_HEIGHT / 2 + (19 - tile->posy) * TILE_SIZE; 
     int tile_width = TILE_SIZE - MARGIN * 2;
@@ -274,10 +283,10 @@ void draw_board(struct Tetromino *active_tetromino) { // don't draw board over t
 
 struct Tetromino generate_tetromino(){
     struct Tetromino tetromino;
-    struct Tile start_tile = {5, 15, NULL}; // This is the initial position of the tetromino
+    struct Tile start_tile = {5, 20, NULL}; // This is the initial position of the tetromino
 
-    int r = 3; // temp, implement random tetromino
-    
+    static int r = 0; // temp, implement random tetromino
+
     switch (r) {
         case 0: // T
             start_tile.color = &color_a;
@@ -329,6 +338,13 @@ struct Tetromino generate_tetromino(){
             tetromino.tiles[3] = (struct Tile){start_tile.posx-1, start_tile.posy-1, &color_g};
             break;
     }
+
+    // temp, for testing
+    r++;
+    if (r > 6) {
+        r = 0;
+    }
+
     return tetromino;
 }
 
@@ -337,8 +353,7 @@ void draw_tetromino(struct Tetromino *tetromino) {
         draw_tile(&(tetromino->tiles[i]));
     }
 }
-
-int move_tetromino(struct Tetromino *tetromino, char direction) {
+bool move_tetromino(struct Tetromino *tetromino, char direction) {
     for (int i = 0; i < 4; i++) {
         struct Tile *tile = &(tetromino->tiles[i]);
         struct Tile new_tile = {tile->posx, tile->posy, tile->color};
@@ -346,13 +361,13 @@ int move_tetromino(struct Tetromino *tetromino, char direction) {
         move_tile(&new_tile, direction);
 
         // bounds checking
-        if (new_tile.posx < 0 || new_tile.posx > 9 || new_tile.posy < 0 || new_tile.posy > 19) {
-            return direction != 'd';
+        if (new_tile.posx < 0 || new_tile.posx > 9 || new_tile.posy < 0) {
+            return direction == 'd';
         }
 
         // other pieces checking
         if (board[new_tile.posy][new_tile.posx] != NULL) {
-            return direction != 'd';
+            return direction == 'd';
         }
     }
 
@@ -360,7 +375,7 @@ int move_tetromino(struct Tetromino *tetromino, char direction) {
         move_tile(&(tetromino->tiles[i]), direction);
     }
 
-    return 0;
+    return false;
 }
 
 void write_tetromino(struct Tetromino *tetromino) {
@@ -395,7 +410,7 @@ void rotate_tetromino(struct Tetromino *tetromino, char direction) {
         }
 
         // bounds checking
-        if (newx[i] < 0 || newx[i] > 9 || newy[i] < 0 || newy[i] > 19) {
+        if (newx[i] < 0 || newx[i] > 9 || newy[i] < 0) {
             return;
         }
 

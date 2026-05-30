@@ -100,8 +100,6 @@ char kbd_US [128] = {
 };
 
 char get_keypress() {
-    int G = 48; // level 0 speed. This variable will be a parameter of this function in the future
-
     char keypress = kbd_US[kbdap_last_scancode];
     static int frames_held = 0;
 
@@ -114,7 +112,7 @@ char get_keypress() {
     // else counter++
     frames_held++;  
 
-    if ((frames_held % (G / 2) == 0) && keypress == 's') { // Soft drop - half of G speed
+    if ((frames_held % 3 == 0) && keypress == 's') { // Soft drop 
         return keypress;
     } else if (keypress == 's') { 
         return 0;

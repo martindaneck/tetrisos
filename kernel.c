@@ -163,6 +163,7 @@ void kernel_main(unsigned long addr)
 
     /// TETRIS GAME
     struct Tetromino active_tetromino = generate_tetromino();
+    struct Tetromino next_tetromino = generate_tetromino();
     bool tetromino_down = false;
     int G = 48; //gravity, adjusted with levels
     bool paused = false;
@@ -219,7 +220,13 @@ void kernel_main(unsigned long addr)
 
         if (tetromino_down) {
             write_tetromino(&active_tetromino);
-            active_tetromino = generate_tetromino();
+            
+            // generate next tetromino
+            active_tetromino = next_tetromino;
+            next_tetromino = generate_tetromino();
+
+            // draw black over old next tetromino, here for performance
+            draw_rect(760, 80, 300, 300, &color_black);
         }
 
         tetromino_down = false;
@@ -228,11 +235,15 @@ void kernel_main(unsigned long addr)
         clear_full_rows();
 
         /// RENDER
-        //draw_tile(&test_tile); 
         draw_tetromino(&active_tetromino);   
         
         // draw the board
         draw_board(&active_tetromino);
+
+        // draw next tetromino
+        for (int i = 0; i < 4; i++) {
+            draw_tile(&(struct Tile){next_tetromino.tiles[i].posx + 10, next_tetromino.tiles[i].posy - 6, next_tetromino.tiles[i].color});
+        }
     }
 }
 

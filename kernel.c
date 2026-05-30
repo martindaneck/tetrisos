@@ -5,7 +5,7 @@
 #include "keyboardap.h"
 #include "timer.h"
 
-typedef struct {
+typedef struct { // multiboot 
     uint32_t flags;
 
     uint32_t mem_lower;
@@ -164,6 +164,7 @@ void kernel_main(unsigned long addr)
     struct Tetromino active_tetromino = generate_tetromino();
     bool tetromino_down = false;
     int G = 48; //gravity, adjusted with levels
+    bool paused = false;
     
     
     kbdap_init();
@@ -175,11 +176,21 @@ void kernel_main(unsigned long addr)
         kbdap_loop();
         if (last_time != time) {
             c = get_keypress();
+
+            // toggle pause
+            if (c == 'p') {
+                paused = !paused;
+            }
+
         } else {
             continue; // ensures game logic runs at 60 Hz
         }
         // update last time
         last_time = time;
+
+        if (paused) {
+            continue;
+        }
 
 
         /// INPUT
@@ -226,7 +237,6 @@ void draw_tile(struct Tile *tile) {
         return;
     }
 
-
     int x = MARGIN + CENTER_X - BOARD_WIDTH / 2  + tile->posx * TILE_SIZE; 
     int y = MARGIN + CENTER_Y - BOARD_HEIGHT / 2 + (19 - tile->posy) * TILE_SIZE; 
     int tile_width = TILE_SIZE - MARGIN * 2;
@@ -234,7 +244,6 @@ void draw_tile(struct Tile *tile) {
 
     struct multiboot_color *color = tile->color == NULL ? &color_black : tile->color;    
     
-
     draw_rect(x, y, tile_width, tile_height, color);
 }
 

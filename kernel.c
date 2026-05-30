@@ -113,7 +113,7 @@ struct multiboot_color color_f = {168, 54, 206 }; // color 6
 struct multiboot_color color_g = {215, 90, 184 }; // color 7
 struct multiboot_color color_light_gray = {208, 208, 208 }; // light gray
 struct multiboot_color color_gray = {128, 128, 128 }; // medium gray
-struct multiboot_color color_dark_gray = {32, 32, 32 }; // dark gray
+struct multiboot_color color_dark_gray = {30, 30, 30 }; // dark gray
 struct multiboot_color color_black = {0, 0, 0 }; // black
 struct multiboot_color color_white = {255, 255, 255 }; // white
 struct multiboot_color color_red = {255, 0, 0 }; // red
@@ -142,8 +142,9 @@ bool move_tetromino(struct Tetromino *tetromino, char direction);
 void write_tetromino(struct Tetromino *tetromino);
 struct Tetromino generate_tetromino();
 void rotate_tetromino(struct Tetromino *tetromino, char direction);
-bool full_row(int row);
+bool row_full(int row);
 int clear_full_rows();
+void animate_cleared_rows(int cleared_rows[4]);
 
 void kernel_main(unsigned long addr) 
 {   
@@ -222,6 +223,9 @@ void kernel_main(unsigned long addr)
         }
 
         tetromino_down = false;
+
+        // clear full rows
+        clear_full_rows();
 
         /// RENDER
         //draw_tile(&test_tile); 
@@ -362,6 +366,7 @@ void draw_tetromino(struct Tetromino *tetromino) {
         draw_tile(&(tetromino->tiles[i]));
     }
 }
+
 bool move_tetromino(struct Tetromino *tetromino, char direction) {
     for (int i = 0; i < 4; i++) {
         struct Tile *tile = &(tetromino->tiles[i]);
@@ -392,7 +397,6 @@ void write_tetromino(struct Tetromino *tetromino) {
         write_tile(&(tetromino->tiles[i]));
     }
 }
-
 
 void rotate_tetromino(struct Tetromino *tetromino, char direction) {
     int newx[4];    // new positions
@@ -434,6 +438,83 @@ void rotate_tetromino(struct Tetromino *tetromino, char direction) {
         tetromino->tiles[i].posx = newx[i];
         tetromino->tiles[i].posy = newy[i];
     }
+}
 
-    return;
+bool row_full(int row) {
+    bool full = true;
+    for (int i = 0; i < 10; i++) {
+        if (board[row][i] == NULL) {
+            full = false;
+            break;
+        }
+    }
+    return full;
+}
+
+int clear_full_rows() {
+    int cleared = 0;
+    int cleared_rows[4] = {-1, -1, -1, -1}; // array of full rows' indices
+    for (int l = 0; l < 4; l++) {
+        for (int i = 0; i < 20; i++) {
+
+            if (row_full(i) && cleared_rows[0] != i && cleared_rows[1] != i && cleared_rows[2] != i) { // if row is full and not already in array
+                cleared++;
+                cleared_rows[l] = i;
+            }
+        }
+    }
+
+    if (cleared) {
+        animate_cleared_rows(cleared_rows);
+    }
+    
+    for (int i = 0; i < 4; i++) {
+        if (cleared_rows[i] == -1) {
+            continue;
+        }
+        for (int j = cleared_rows[i]; j < 21; j++) {
+            for (int k = 0; k < 10; k++) {
+                board[j][k] = board[j+1][k];
+            }
+        }
+    } 
+
+    return cleared;
+}
+
+void animate_cleared_rows(int cleared_rows[4]) {
+    int frames = 0;
+    int counter = 0;
+    int last_time = -1;
+    int time = 0; 
+    time += read_timer();
+
+    draw_board(NULL); // i have ZERO idea why the FUCK does this have to be there, otherwise black is written over last active tetromino
+    
+    while(counter < 7) { // 7 is shenanigance for pretty animation, otherwise 4
+        time += read_timer();
+        if (last_time != time) { // same 60 fps logic as in main loop
+            last_time = time;
+            frames++;
+
+            if (frames % 4 != 0) { 
+                continue;
+            }
+
+            for (int i = 0; i < 4; i++) {
+                if (cleared_rows[i] == -1) {
+                    continue;
+                }
+
+                if (counter > 4) { // shenanigance for pretty animation
+                    continue;   
+                }
+
+                draw_tile(&(struct Tile){4 - counter, cleared_rows[i], &color_dark_gray}); // draw empty spaces from middle to edges
+                draw_tile(&(struct Tile){5 + counter, cleared_rows[i], &color_dark_gray});
+            }
+
+            counter++;
+        }
+    } 
 }

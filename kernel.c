@@ -4,6 +4,7 @@
 
 #include "keyboardap.h"
 #include "timer.h"
+#include "text.h"
 
 typedef struct { // multiboot 
     uint32_t flags;
@@ -45,12 +46,7 @@ typedef struct { // multiboot
 
 } multiboot_info_t;
 
-struct multiboot_color
-{
-    uint8_t red;
-    uint8_t green;
-    uint8_t blue;
-};
+
 
 static inline unsigned char inb (unsigned short _port) {
     unsigned char rv;
@@ -61,23 +57,6 @@ static inline unsigned char inb (unsigned short _port) {
 static inline void outb (unsigned short _port, unsigned char _data) {
     asm volatile ("out %0, %1" : : "a" (_data), "dN" (_port));
 }
-
-
-void draw_pixel_fb(uint32_t x, uint32_t y, struct multiboot_color *color, uint64_t fb_address, uint32_t pitch) {
-    *(uint32_t *)(fb_address + y * pitch + x * 4) = color->red << 16 | color->green << 8 | color->blue;
-}
-// pretty macro for it
-#define draw_pixel(x, y, color) draw_pixel_fb(x, y, color, fb_address, fb_pitch)
-
-void draw_rect_fb(uint32_t x, uint32_t y, uint32_t width, uint32_t height, struct multiboot_color *color, uint64_t fb_address, uint32_t fb_pitch) {
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
-            draw_pixel(x + j, y + i, color);
-        }
-    }
-}
-#define draw_rect(x, y, width, height, color) draw_rect_fb(x, y, width, height, color, fb_address, fb_pitch)
-
 
 // macro definitions
 #define WIDTH 1024
@@ -161,6 +140,9 @@ void kernel_main(unsigned long addr)
     // init timer
     set_timer();
 
+    // init font
+    font_init();
+
     /// TETRIS GAME
     struct Tetromino active_tetromino = generate_tetromino();
     struct Tetromino next_tetromino = generate_tetromino();
@@ -197,8 +179,6 @@ void kernel_main(unsigned long addr)
 
         /// INPUT
         switch (c) {
-            case 'w': 
-                move_tetromino(&active_tetromino, 'u'); break; // temporary test direction
             case 'a': 
                 move_tetromino(&active_tetromino, 'l'); break;
             case 's': 
@@ -209,8 +189,6 @@ void kernel_main(unsigned long addr)
                 rotate_tetromino(&active_tetromino, 'a'); break;
             case 'e':
                 rotate_tetromino(&active_tetromino, 'c'); break;
-            case 'f': 
-                write_tetromino(&active_tetromino); break; // temporary test write
         }
         /// LOGIC
         // fall
@@ -236,6 +214,9 @@ void kernel_main(unsigned long addr)
             draw_tile(&(struct Tile){next_tetromino.tiles[i].posx + 9, next_tetromino.tiles[i].posy - 6, next_tetromino.tiles[i].color});
         }
 
+        // text
+        draw_text("NEXT:", 780, 80, 10, &color_white);
+
         // clear full rows
         clear_full_rows();
 
@@ -244,6 +225,7 @@ void kernel_main(unsigned long addr)
         
         // draw the board
         draw_board(&active_tetromino);
+
 
         
     }

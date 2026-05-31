@@ -231,6 +231,11 @@ void kernel_main(unsigned long addr)
 
         tetromino_down = false;
 
+        // draw next tetromino, here because of visual bug
+        for (int i = 0; i < 4; i++) {
+            draw_tile(&(struct Tile){next_tetromino.tiles[i].posx + 9, next_tetromino.tiles[i].posy - 6, next_tetromino.tiles[i].color});
+        }
+
         // clear full rows
         clear_full_rows();
 
@@ -240,10 +245,7 @@ void kernel_main(unsigned long addr)
         // draw the board
         draw_board(&active_tetromino);
 
-        // draw next tetromino
-        for (int i = 0; i < 4; i++) {
-            draw_tile(&(struct Tile){next_tetromino.tiles[i].posx + 10, next_tetromino.tiles[i].posy - 6, next_tetromino.tiles[i].color});
-        }
+        
     }
 }
 
@@ -322,37 +324,37 @@ struct Tetromino generate_tetromino(){
         case 1: // J
             start_tile.color = &color_b;
             tetromino.tiles[0] = start_tile;
-            tetromino.tiles[1] = (struct Tile){start_tile.posx, start_tile.posy-1,   &color_b};
-            tetromino.tiles[2] = (struct Tile){start_tile.posx-1, start_tile.posy-1, &color_b};
-            tetromino.tiles[3] = (struct Tile){start_tile.posx, start_tile.posy+1,   &color_b};
+            tetromino.tiles[1] = (struct Tile){start_tile.posx-1, start_tile.posy,   &color_b};
+            tetromino.tiles[2] = (struct Tile){start_tile.posx+1, start_tile.posy-1, &color_b};
+            tetromino.tiles[3] = (struct Tile){start_tile.posx+1, start_tile.posy,   &color_b};
             break;
         case 2: // L
             start_tile.color = &color_c;
             tetromino.tiles[0] = start_tile;
-            tetromino.tiles[1] = (struct Tile){start_tile.posx, start_tile.posy-1, &color_c};
-            tetromino.tiles[2] = (struct Tile){start_tile.posx+1, start_tile.posy-1, &color_c};
-            tetromino.tiles[3] = (struct Tile){start_tile.posx, start_tile.posy+1, &color_c};
+            tetromino.tiles[1] = (struct Tile){start_tile.posx-1, start_tile.posy-1, &color_c};
+            tetromino.tiles[2] = (struct Tile){start_tile.posx+1, start_tile.posy, &color_c};
+            tetromino.tiles[3] = (struct Tile){start_tile.posx-1, start_tile.posy, &color_c};
             break;
         case 3: // I
             start_tile.color = &color_d;
             tetromino.tiles[0] = start_tile;
             tetromino.tiles[1] = (struct Tile){start_tile.posx-1, start_tile.posy, &color_d};
             tetromino.tiles[2] = (struct Tile){start_tile.posx+1, start_tile.posy, &color_d};
-            tetromino.tiles[3] = (struct Tile){start_tile.posx-2, start_tile.posy, &color_d};
+            tetromino.tiles[3] = (struct Tile){start_tile.posx+2, start_tile.posy, &color_d};
             break;
         case 4: // O
             start_tile.color = &color_e;
             tetromino.tiles[0] = start_tile;
-            tetromino.tiles[1] = (struct Tile){start_tile.posx-1, start_tile.posy, &color_e};
-            tetromino.tiles[2] = (struct Tile){start_tile.posx, start_tile.posy+1, &color_e};
-            tetromino.tiles[3] = (struct Tile){start_tile.posx-1, start_tile.posy+1, &color_e};
+            tetromino.tiles[1] = (struct Tile){start_tile.posx+1, start_tile.posy, &color_e};
+            tetromino.tiles[2] = (struct Tile){start_tile.posx, start_tile.posy-1, &color_e};
+            tetromino.tiles[3] = (struct Tile){start_tile.posx+1, start_tile.posy-1, &color_e};
             break;
         case 5: // Z
             start_tile.color = &color_f;
             tetromino.tiles[0] = start_tile;
-            tetromino.tiles[1] = (struct Tile){start_tile.posx+1, start_tile.posy, &color_f};
-            tetromino.tiles[2] = (struct Tile){start_tile.posx, start_tile.posy+1, &color_f};
-            tetromino.tiles[3] = (struct Tile){start_tile.posx-1, start_tile.posy+1, &color_f};
+            tetromino.tiles[1] = (struct Tile){start_tile.posx+1, start_tile.posy-1, &color_f};
+            tetromino.tiles[2] = (struct Tile){start_tile.posx, start_tile.posy-1, &color_f};
+            tetromino.tiles[3] = (struct Tile){start_tile.posx-1, start_tile.posy, &color_f};
             break;
         case 6: // S
             start_tile.color = &color_g;

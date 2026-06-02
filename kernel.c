@@ -58,6 +58,29 @@ static inline void outb (unsigned short _port, unsigned char _data) {
     asm volatile ("out %0, %1" : : "a" (_data), "dN" (_port));
 }
 
+int itoa(int value, char *str) {
+    int base = 10;
+    int i = 0;
+    int len = 0;
+    char temp[16];
+
+    do {
+        temp[i++] = (value % base) + '0';
+    } while (value /= base);
+
+    len = i;
+
+    // reverse the string
+    
+    for (int j = 0; j < len; j++) {
+        str[j] = temp[len - j - 1];
+    }
+
+    str[len] = '\0';
+
+    return len;
+}
+
 // macro definitions
 #define WIDTH 1024
 #define HEIGHT 768 // inferred from boot.s, dirty magic numbers for simplicity
@@ -147,8 +170,17 @@ void kernel_main(unsigned long addr)
     struct Tetromino active_tetromino = generate_tetromino();
     struct Tetromino next_tetromino = generate_tetromino();
     bool tetromino_down = false;
-    int G = 48; //gravity, adjusted with levels
     bool paused = false;
+
+    uint8_t G_VALUES[30] = {48, 43, 38, 33, 28, 23, 18, 13, 8, 6, 
+                             5, 5, 5, 4, 4, 4, 3, 3, 3, 
+                             2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                             1};
+    uint16_t G = 48; //gravity, adjusted with levels
+    uint16_t level = 0;
+    uint16_t old_cleared_rows = 0;
+    uint16_t cleared_rows = 0;
+    uint64_t score = 0;
     
     
     kbdap_init();
@@ -212,15 +244,57 @@ void kernel_main(unsigned long addr)
         // draw next tetromino, here because of visual bug
         for (int i = 0; i < 4; i++) {
             draw_tile(&(struct Tile){next_tetromino.tiles[i].posx + 9, next_tetromino.tiles[i].posy - 6, next_tetromino.tiles[i].color});
-        }
+        }        
 
-        // text
+        
+        // next
         draw_text("NEXT:", 780, 80, 10, &color_white);
 
         // clear full rows
-        clear_full_rows();
+        cleared_rows += clear_full_rows();
 
-        /// RENDER
+        if (old_cleared_rows != cleared_rows || cleared_rows == 0) {
+            
+            // score
+            draw_text("SCORE:", 40, 80, 10, &color_white);
+            draw_rect(40, 160, 280, 100, &color_black);
+            int lines_cleared = cleared_rows - old_cleared_rows;
+            int multiplier;
+            switch (lines_cleared) {
+                case 1: multiplier = 40; break;
+                case 2: multiplier = 100; break;
+                case 3: multiplier = 300; break;
+                case 4: multiplier = 1200; break;
+            }
+            score += multiplier * (level + 1);
+
+
+            char score_text[16];
+            itoa(score, score_text);
+            draw_text(score_text, 40, 160, 8, &color_white);
+
+            // lines cleared
+            draw_text("LINES:", 760, 450, 9, &color_white);
+            draw_rect(760, 530, 280, 100, &color_black);
+            char cleared_rows_text[16];
+            itoa(cleared_rows, cleared_rows_text);
+            draw_text(cleared_rows_text, 760, 530, 8, &color_white);
+
+            // level
+            level = cleared_rows / 10;
+            draw_text("LEVEL:", 40, 450, 9, &color_white);
+            draw_rect(40, 530, 280, 100, &color_black);
+            char level_text[16];
+            itoa(level, level_text);
+            draw_text(level_text, 40, 530, 8, &color_white);
+
+            // update G
+            G = level < 30 ? G_VALUES[level] : G_VALUES[29];
+        }
+
+        old_cleared_rows = cleared_rows;
+
+        // draw tetromino
         draw_tetromino(&active_tetromino);   
         
         // draw the board
@@ -449,11 +523,17 @@ bool row_full(int row) {
 int clear_full_rows() {
     int cleared = 0;
     int cleared_rows[4] = {-1, -1, -1, -1}; // array of full rows' indices
+
+    for (int i = 0; i < 20; i++) {
+        if (row_full(i)) {
+            cleared++;
+        }
+    }
+
     for (int l = 0; l < 4; l++) {
         for (int i = 0; i < 20; i++) {
 
-            if (row_full(i) && cleared_rows[0] != i && cleared_rows[1] != i && cleared_rows[2] != i) { // if row is full and not already in array
-                cleared++;
+            if (row_full(i) && cleared_rows[0] != i && cleared_rows[1] != i && cleared_rows[2] != i && cleared_rows[3] != i) { // if row is full and not already in array
                 cleared_rows[l] = i;
             }
         }

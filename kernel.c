@@ -5,6 +5,7 @@
 #include "keyboardap.h"
 #include "timer.h"
 #include "text.h"
+#include "random.h"
 
 typedef struct { // multiboot 
     uint32_t flags;
@@ -80,6 +81,17 @@ int itoa(int value, char *str) {
 
     return len;
 }
+
+// randomness
+uint64_t seed;
+uint64_t rand64(void) { // splitmix64
+    seed += 0x9e3779b97f4a7c15ULL;
+    uint64_t z = seed;
+    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
+    return z ^ (z >> 31);
+}
+    
 
 // macro definitions
 #define WIDTH 1024
@@ -181,7 +193,9 @@ void kernel_main(unsigned long addr)
     uint16_t old_cleared_rows = 0;
     uint16_t cleared_rows = 0;
     uint64_t score = 0;
-    
+
+    // seed randomness
+    seed = read_rtc();
     
     kbdap_init();
     while (true) {
@@ -367,7 +381,7 @@ struct Tetromino generate_tetromino(){
     struct Tetromino tetromino;
     struct Tile start_tile = {5, 20, NULL}; // This is the initial position of the tetromino
 
-    static int r = 0; // temp, implement random tetromino
+    int r = rand64() % 7;
 
     switch (r) {
         case 0: // T
@@ -419,12 +433,6 @@ struct Tetromino generate_tetromino(){
             tetromino.tiles[2] = (struct Tile){start_tile.posx, start_tile.posy-1, &color_g};
             tetromino.tiles[3] = (struct Tile){start_tile.posx-1, start_tile.posy-1, &color_g};
             break;
-    }
-
-    // temp, for testing
-    r++;
-    if (r > 6) {
-        r = 0;
     }
 
     return tetromino;
